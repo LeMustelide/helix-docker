@@ -4,8 +4,8 @@
 
 FROM ubuntu:focal
 
-LABEL vendor="Sourcegraph"
-LABEL maintainer="Joe Chen (joe@sourcegraph.com)"
+LABEL vendor="Personal"
+LABEL maintainer="Marc Virgili"
 
 # Update Ubuntu and add Perforce Package Source
 RUN apt-get update && \
@@ -21,18 +21,25 @@ RUN apt-get update && \
 # Create perforce user and install Perforce Server
 # Do in-page search over https://package.perforce.com/apt/ubuntu/dists/focal/release/binary-amd64/Packages
 # for both "Package: helix-p4d" and "Package: helix-swarm-triggers".
-RUN apt-get update && apt-get install -y helix-p4d=2024.1-2625008~focal helix-swarm-triggers=2024.3-2628402~focal
+RUN apt-get update && apt-get install -y helix-p4d=2025.2-2852709~focal helix-swarm-triggers=2025.1-2745343~focal
 # Add external files
 COPY files/restore.sh /usr/local/bin/restore.sh
 COPY files/setup.sh /usr/local/bin/setup.sh
 COPY files/init.sh /usr/local/bin/init.sh
 COPY files/latest_checkpoint.sh /usr/local/bin/latest_checkpoint.sh
+COPY files/run.sh /usr/local/bin/run.sh
 
 RUN \
   chmod +x /usr/local/bin/restore.sh && \
   chmod +x /usr/local/bin/setup.sh && \
   chmod +x /usr/local/bin/init.sh && \
-  chmod +x /usr/local/bin/latest_checkpoint.sh
+  chmod +x /usr/local/bin/latest_checkpoint.sh && \
+  chmod +x /usr/local/bin/run.sh && \
+  sed -i 's/\r$//' /usr/local/bin/restore.sh && \
+  sed -i 's/\r$//' /usr/local/bin/setup.sh && \
+  sed -i 's/\r$//' /usr/local/bin/init.sh && \
+  sed -i 's/\r$//' /usr/local/bin/latest_checkpoint.sh && \
+  sed -i 's/\r$//' /usr/local/bin/run.sh
 
 # --------------------------------------------------------------------------------
 # Docker ENVIRONMENT
@@ -74,9 +81,8 @@ VOLUME $P4HOME
 # Docker RUN
 # --------------------------------------------------------------------------------
 
-ENTRYPOINT \
-  init.sh && \
-  /usr/bin/tail -F $P4ROOT/logs/log
+# Use Exec form (JSON array)
+ENTRYPOINT ["/usr/local/bin/run.sh"]
 
 HEALTHCHECK \
   --interval=2m \
